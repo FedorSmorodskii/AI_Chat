@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mistral Chat</title>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
-        /* Ваши стили остаются без изменений */
         :root {
             --bg-primary: #1a1a1a;
             --bg-secondary: #252525;
@@ -15,6 +15,7 @@
             --accent-color: #4a6fa5;
             --accent-hover: #3a5a8a;
             --border-color: #3a3a3a;
+            --profile-bg: #333;
         }
 
         body {
@@ -29,7 +30,8 @@
 
         .chat-container {
             display: flex;
-            height: 100%;
+            height: 100vh; /* Используем всю высоту viewport */
+            overflow: hidden; /* Убираем глобальный скролл */
         }
 
         .sidebar {
@@ -38,6 +40,40 @@
             border-right: 1px solid var(--border-color);
             padding: 15px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Стилизованный скроллбар сайдбара */
+        .sidebar::-webkit-scrollbar {
+            width: 8px;
+        }
+        .sidebar::-webkit-scrollbar-track {
+            background: var(--bg-secondary);
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background: var(--bg-tertiary);
+            border-radius: 4px;
+        }
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+
+        /* Стилизованный скроллбар чата */
+        .messages-container::-webkit-scrollbar {
+            width: 10px;
+        }
+        .messages-container::-webkit-scrollbar-track {
+            background: var(--bg-primary);
+            border-radius: 10px;
+        }
+        .messages-container::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 10px;
+            border: 2px solid var(--bg-primary);
+        }
+        .messages-container::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-hover);
         }
 
         .btn-new-chat {
@@ -67,21 +103,86 @@
             border-bottom: 1px solid var(--border-color);
         }
 
+        .chat-time-group {
+            margin-top: 15px;
+        }
+
+        .time-group-header {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         .chat-item {
             display: flex;
             justify-content: space-between;
             padding: 10px 8px;
-            border-bottom: 1px solid var(--border-color);
+            border-radius: 6px;
             cursor: pointer;
+            margin-bottom: 4px;
         }
 
         .chat-item:hover {
             background-color: var(--bg-tertiary);
         }
 
+        .chat-item.active {
+            background-color: var(--accent-color);
+        }
+
+        .chat-title {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1;
+        }
+
         .chat-time {
             color: var(--text-secondary);
-            font-size: 13px;
+            font-size: 12px;
+            white-space: nowrap;
+            margin-left: 8px;
+        }
+
+        .profile-section {
+            margin-top: auto;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            position: sticky;
+            bottom: 0;
+            background-color: var(--bg-secondary);
+            padding-bottom: 5px;
+        }
+
+        .profile-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            width: 100%;
+            background-color: var(--profile-bg);
+            color: var(--text-primary);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .profile-btn:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
         }
 
         .chat-area {
@@ -89,24 +190,23 @@
             display: flex;
             flex-direction: column;
             position: relative;
+            height: 100%; /* Занимаем всю доступную высоту */
         }
+
 
         .messages-container {
             flex: 1;
             overflow-y: auto;
             padding: 20px;
-            /* Убираем все flex-свойства, которые могут мешать */
-            display: block;
             position: relative;
+            /* height больше не задаем явно */
         }
-
 
         #messages {
             width: 100%;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            /* Важно: padding-bottom должен быть равен высоте input-контейнера */
             padding-bottom: 100px;
         }
 
@@ -219,9 +319,10 @@
 
         .input-container {
             padding: 15px;
-            /*background-color: var(--bg-secondary);*/
             width: 100%;
-            display: none; /* Скрыто по умолчанию */
+            background: var(--bg-primary);
+            position: sticky;
+            bottom: 0;
         }
 
         .input-wrapper {
@@ -270,6 +371,102 @@
         .hidden {
             display: none;
         }
+        .chat-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--bg-primary);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            display: flex;
+            justify-content: center; /* Добавляем выравнивание по центру */
+            align-items: center;
+            text-align: center; /* Центрируем текст */
+        }
+
+        .chat-title-display {
+            font-size: 18px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 80%;
+            margin: 0 auto;
+            text-align: center;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .message-content pre {
+            background-color: var(--bg-secondary);
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .message-content code {
+            font-family: 'Courier New', monospace;
+            background-color: var(--bg-secondary);
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-size: 0.9em;
+        }
+
+        .message-content blockquote {
+            border-left: 3px solid var(--accent-color);
+            padding-left: 12px;
+            margin-left: 0;
+            color: var(--text-secondary);
+        }
+
+        .message-content ul,
+        .message-content ol {
+            padding-left: 20px;
+            margin: 8px 0;
+        }
+
+        .message-content li {
+            margin-bottom: 4px;
+        }
+
+        .message-content h1,
+        .message-content h2,
+        .message-content h3 {
+            margin: 16px 0 8px 0;
+        }
+
+        .message-content h1 {
+            font-size: 1.5em;
+        }
+
+        .message-content h2 {
+            font-size: 1.3em;
+        }
+
+        .message-content h3 {
+            font-size: 1.1em;
+        }
+
+        .message-content a {
+            color: var(--accent-color);
+            text-decoration: none;
+        }
+
+        .message-content a:hover {
+            text-decoration: underline;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .typewriter-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background-color: var(--text-primary);
+            animation: blink 1s infinite;
+            vertical-align: middle;
+            margin-left: 2px;
+        }
     </style>
 </head>
 <body>
@@ -284,7 +481,14 @@
 
             <div class="chat-list-header">Recent Chats</div>
             <div id="chat-list" class="chat-list">
-                <!-- Chat items will be populated by JavaScript -->
+                <!-- Chat items will be populated by JavaScript with time groups -->
+            </div>
+
+            <div class="profile-section">
+                <button class="profile-btn">
+                    <div class="profile-avatar">U</div>
+                    <span>User Profile</span>
+                </button>
             </div>
         </div>
 
@@ -301,6 +505,12 @@
                         </button>
                     </form>
                 </div>
+            </div>
+
+            <div class="chat-area">
+            <!-- Добавляем этот блок для заголовка чата -->
+            <div class="chat-header">
+                <div id="chat-title" class="chat-title-display">New Chat</div>
             </div>
 
             <div id="messages-view" class="messages-container hidden">
@@ -323,6 +533,7 @@
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         // DOM элементы
+        const chatTitleDisplay = document.getElementById('chat-title');
         const messageForm = document.getElementById('message-form');
         const welcomeForm = document.getElementById('welcome-form');
         const welcomeInput = document.getElementById('welcome-message-input');
@@ -337,6 +548,11 @@
 
         let currentChatId = null;
         let isSending = false;
+
+        // Функция для обновления заголовка чата
+        function updateChatTitle(title) {
+            chatTitleDisplay.textContent = title || 'New Chat';
+        }
 
         // Инициализация приложения
         async function init() {
@@ -355,7 +571,6 @@
             let isUserScrolledUp = false;
 
             messagesView.addEventListener('scroll', function() {
-                // Запоминаем, если пользователь прокрутил вверх
                 isUserScrolledUp = messagesView.scrollTop + messagesView.clientHeight < messagesView.scrollHeight - 100;
             });
 
@@ -364,6 +579,7 @@
                     messagesView.scrollTop = messagesView.scrollHeight;
                 }
             });
+
             messageForm.addEventListener('submit', async function(e) {
                 e.preventDefault();
                 if (!isSending && messageInput.value.trim()) {
@@ -398,6 +614,70 @@
             setupTextareaAutoResize(welcomeInput);
         }
 
+        // Функция для генерации темы чата
+        async function generateChatTitle(message, chatId) {
+            try {
+                const response = await fetch('/generate-title', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        message: message,
+                        chat_id: chatId
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                return result.title || `Chat ${chatId}`;
+            } catch (error) {
+                console.error('Error generating chat title:', error);
+                return `Chat ${chatId}`;
+            }
+        }
+
+        // Функция для группировки чатов по времени
+        function groupChatsByTime(chats) {
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            const lastWeek = new Date(today);
+            lastWeek.setDate(lastWeek.getDate() - 7);
+
+            const groups = {
+                'Last Hour': [],
+                'Today': [],
+                'Yesterday': [],
+                'Last Week': [],
+                'Older': []
+            };
+
+            chats.forEach(chat => {
+                const chatDate = new Date(chat.created_at);
+                const timeDiff = now - chatDate;
+                const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+                if (hoursDiff < 1) {
+                    groups['Last Hour'].push(chat);
+                } else if (chatDate >= today) {
+                    groups['Today'].push(chat);
+                } else if (chatDate >= yesterday) {
+                    groups['Yesterday'].push(chat);
+                } else if (chatDate >= lastWeek) {
+                    groups['Last Week'].push(chat);
+                } else {
+                    groups['Older'].push(chat);
+                }
+            });
+
+            return groups;
+        }
+
         // Загрузка начального чата
         async function loadInitialChat() {
             try {
@@ -416,28 +696,56 @@
             }
         }
 
-        // Загрузка списка чатов
+        // Загрузка списка чатов с группировкой по времени
         async function loadChatList() {
             try {
                 const response = await fetch('/chats');
                 const chats = await response.json();
 
+                const groupedChats = groupChatsByTime(chats);
+
                 chatList.innerHTML = '';
 
-                chats.forEach(chat => {
-                    const chatItem = document.createElement('div');
-                    chatItem.className = 'chat-item';
-                    chatItem.innerHTML = `
-                        <div>Chat ${chat.id}</div>
-                        <div class="chat-time">${new Date(chat.created_at).toLocaleTimeString()}</div>
-                    `;
-                    chatItem.addEventListener('click', () => loadChat(chat.id));
-                    chatList.appendChild(chatItem);
-                });
+                for (const [groupName, groupChats] of Object.entries(groupedChats)) {
+                    if (groupChats.length === 0) continue;
+
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'chat-time-group';
+
+                    const header = document.createElement('div');
+                    header.className = 'time-group-header';
+                    header.textContent = groupName;
+                    groupDiv.appendChild(header);
+
+                    groupChats.forEach(chat => {
+                        const chatItem = document.createElement('div');
+                        chatItem.className = `chat-item ${chat.id === currentChatId ? 'active' : ''}`;
+                        chatItem.innerHTML = `
+                            <div class="chat-title">${chat.title || `Chat ${chat.id}`}</div>
+                            <div class="chat-time">${formatTime(chat.created_at)}</div>
+                        `;
+                        chatItem.addEventListener('click', () => {
+                            document.querySelectorAll('.chat-item').forEach(item => {
+                                item.classList.remove('active');
+                            });
+                            chatItem.classList.add('active');
+                            loadChat(chat.id);
+                        });
+                        groupDiv.appendChild(chatItem);
+                    });
+
+                    chatList.appendChild(groupDiv);
+                }
             } catch (error) {
                 console.error('Error loading chat list:', error);
                 throw error;
             }
+        }
+
+        // Форматирование времени для отображения
+        function formatTime(isoString) {
+            const date = new Date(isoString);
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
         }
 
         // Загрузка конкретного чата
@@ -448,22 +756,46 @@
                 const chatData = await response.json();
 
                 messagesContainer.innerHTML = '';
+                updateChatTitle(chatData.title);
 
+                // Загружаем сообщения без эффекта печати
                 chatData.messages.forEach(msg => {
-                    addMessageToUI(msg.content, msg.is_user, new Date(msg.created_at));
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = `message ${msg.is_user ? 'user-message' : 'assistant-message'}`;
+
+                    const contentDiv = document.createElement('div');
+                    contentDiv.className = 'message-content';
+
+                    // Для сообщений ассистента рендерим Markdown
+                    if (!msg.is_user) {
+                        contentDiv.innerHTML = marked.parse(msg.content);
+                    } else {
+                        contentDiv.textContent = msg.content;
+                    }
+
+                    const timeDiv = document.createElement('div');
+                    timeDiv.className = 'message-time';
+                    timeDiv.textContent = formatTime(msg.created_at);
+
+                    messageDiv.appendChild(contentDiv);
+                    messageDiv.appendChild(timeDiv);
+                    messagesContainer.appendChild(messageDiv);
                 });
 
                 welcomeView.classList.add('hidden');
                 messagesView.classList.remove('hidden');
                 mainInputContainer.style.display = 'block';
                 messageInput.focus();
+
+                await loadChatList();
             } catch (error) {
                 console.error('Error loading chat:', error);
                 throw error;
             }
         }
 
-        // Создание нового чата
+
+        // Обновляем функцию handleNewChat
         async function handleNewChat() {
             try {
                 const response = await fetch('/chats/create', {
@@ -473,6 +805,7 @@
 
                 currentChatId = data.chat_id;
                 messagesContainer.innerHTML = '';
+                updateChatTitle('New Chat'); // Устанавливаем заголовок по умолчанию
                 welcomeView.classList.remove('hidden');
                 messagesView.classList.add('hidden');
                 mainInputContainer.style.display = 'none';
@@ -485,13 +818,12 @@
             }
         }
 
-        // Отправка сообщения
+        // Обновляем функцию sendMessage
         async function sendMessage(message) {
             if (isSending || !message.trim() || !currentChatId) return;
 
             isSending = true;
             try {
-                // Очищаем поле ввода
                 if (welcomeInput.value === message) {
                     welcomeInput.value = '';
                     welcomeInput.style.height = 'auto';
@@ -500,10 +832,8 @@
                     messageInput.style.height = 'auto';
                 }
 
-                // Добавляем сообщение пользователя
                 addMessageToUI(message, true);
 
-                // Отправляем на сервер
                 const response = await fetch(`/chat/${currentChatId}/send`, {
                     method: 'POST',
                     headers: {
@@ -519,8 +849,13 @@
                 const result = await response.json();
 
                 if (result.status === 'success') {
-                    // Добавляем ответ ассистента
+                    // Добавляем сообщение с эффектом печати
                     addMessageToUI(result.message, false, new Date(result.created_at));
+
+                    if (result.is_first_message && result.chat_title) {
+                        updateChatTitle(result.chat_title);
+                        await loadChatList();
+                    }
                 } else {
                     throw new Error(result.message || 'Unknown error');
                 }
@@ -532,14 +867,12 @@
             }
         }
 
-        // Добавление сообщения в UI
         function addMessageToUI(text, isUser, timestamp = new Date()) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
 
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
-            contentDiv.textContent = text;
 
             const timeDiv = document.createElement('div');
             timeDiv.className = 'message-time';
@@ -549,7 +882,15 @@
             messageDiv.appendChild(timeDiv);
             messagesContainer.appendChild(messageDiv);
 
-            // Всегда скроллим вниз при новом сообщении
+            // Для пользовательских сообщений - обычное отображение
+            if (isUser) {
+                contentDiv.textContent = text;
+            }
+            // Для сообщений ассистента - эффект печати
+            else {
+                typeWriterEffect(contentDiv, text);
+            }
+
             requestAnimationFrame(() => {
                 messagesView.scrollTo({
                     top: messagesView.scrollHeight,
@@ -562,6 +903,44 @@
                 messagesView.classList.remove('hidden');
                 mainInputContainer.style.display = 'block';
             }
+        }
+
+        // Функция для эффекта печатающегося текста
+        function typeWriterEffect(element, text, speed = 10) {
+            let i = 0;
+            let htmlBuffer = '';
+            let inCodeBlock = false;
+
+            const typeInterval = setInterval(() => {
+                if (i < text.length) {
+                    const char = text.charAt(i);
+                    htmlBuffer += char;
+
+                    // Быстрая проверка на код-блоки
+                    if (char === '`' && text.charAt(i+1) === '`' && text.charAt(i+2) === '`') {
+                        inCodeBlock = !inCodeBlock;
+                    }
+
+                    // Если внутри код-блока, добавляем сразу весь блок
+                    if (inCodeBlock && char === '`' && text.charAt(i-1) === '`' && text.charAt(i-2) === '`') {
+                        const codeBlockEnd = text.indexOf('```', i+1);
+                        if (codeBlockEnd !== -1) {
+                            htmlBuffer += text.substring(i+1, codeBlockEnd+3);
+                            i = codeBlockEnd + 2;
+                        }
+                        inCodeBlock = false;
+                    }
+
+                    element.innerHTML = marked.parse(htmlBuffer);
+                    messagesView.scrollTo({
+                        top: messagesView.scrollHeight,
+                        behavior: 'smooth'
+                    });
+                    i++;
+                } else {
+                    clearInterval(typeInterval);
+                }
+            }, speed);
         }
 
         // Автоматическое изменение высоты textarea
