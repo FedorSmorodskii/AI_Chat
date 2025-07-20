@@ -1,7 +1,7 @@
 # models.py
 from datetime import datetime
 from sqlalchemy import Column, Integer, DateTime, String, ForeignKey, Boolean
-from .database import Base
+from app.database import Base
 
 class Chat(Base):
     __tablename__ = "chats"

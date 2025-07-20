@@ -2,7 +2,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
-SQLALCHEMY_DATABASE_URL = "sqlite:///./mistral_chat.db"
+SQLALCHEMY_DATABASE_URL = "sqlite:///../mistral_chat.db"  # Две точки для выхода из папки app
 
 engine = create_engine(
     SQLALCHEMY_DATABASE_URL,
